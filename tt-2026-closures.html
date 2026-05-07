@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TT Course Closure App 2026</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d0d0d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Course Closures">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="description" content="TT Mountain Course road closure times for the Isle of Man 2026. When roads close and reopen.">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap');
+
+  :root {
+    --red: #e8001d;
+    --gold: #f5a800;
+    --dark: #0d0d0d;
+    --mid: #1a1a1a;
+    --panel: #222222;
+    --border: #333;
+    --muted: #888;
+    --text: #e8e8e8;
+    --open: #22c55e;
+    --closed: #e8001d;
+    --mountain: #f5a800;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--dark);
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    font-weight: 400;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  header {
+    background: #000;
+    border-bottom: 3px solid var(--red);
+    padding: 0 24px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    height: 64px;
+  }
+
+  .header-flag { display: flex; gap: 3px; flex-shrink: 0; }
+  .flag-stripe { width: 6px; height: 36px; }
+  .flag-stripe:nth-child(1) { background: var(--red); }
+  .flag-stripe:nth-child(2) { background: #fff; }
+  .flag-stripe:nth-child(3) { background: var(--red); }
+  .flag-stripe:nth-child(4) { background: #fff; }
+
+  .header-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 3px;
+    color: #fff;
+    flex: 1;
+    line-height: 1.1;
+  }
+  .header-title span { color: var(--red); }
+  .header-sub {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    display: block;
+  }
+
+  .live-badge {
+    background: var(--red);
+    color: #fff;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 2px;
+    padding: 4px 10px;
+    border-radius: 2px;
+    animation: pulse 2s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.6} }
+
+  #status-bar {
+    background: var(--mid);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .status-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  #road-status {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: 1px;
+  }
+  .status-sep { color: var(--border); }
+  #status-detail { font-size: 14px; color: var(--text); flex: 1; }
+  #current-time {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--gold);
+    margin-left: auto;
+  }
+
+  .main { max-width: 860px; margin: 0 auto; padding: 24px 16px 60px; }
+
+  .week-tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 24px;
+    background: var(--mid);
+    padding: 4px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+  .week-tab {
+    flex: 1;
+    padding: 10px;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.2s;
+  }
+  .week-tab:hover { color: var(--text); background: var(--border); }
+  .week-tab.active { background: var(--red); color: #fff; }
+
+  .legend {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    padding: 12px 16px;
+    background: var(--mid);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+  .leg-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+  .leg-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  .day-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .day-card.is-today { border-color: var(--gold); }
+  .day-card.is-today .day-header { background: rgba(245,168,0,0.06); }
+
+  .day-header {
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .day-header:hover { background: rgba(255,255,255,0.03); }
+
+  .day-date-block { text-align: center; min-width: 48px; }
+  .day-num { font-family: 'Bebas Neue', sans-serif; font-size: 32px; line-height: 1; color: #fff; }
+  .day-mon { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
+
+  .day-info { flex: 1; }
+  .day-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: 1px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .day-type { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+  .today-chip {
+    background: var(--gold);
+    color: #000;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 10px;
+    letter-spacing: 2px;
+    padding: 3px 8px;
+    border-radius: 2px;
+  }
+
+  .closure-pill {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    padding: 4px 12px;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .pill-open  { background: rgba(34,197,94,0.15); color: var(--open); border: 1px solid rgba(34,197,94,0.3); }
+  .pill-closed { background: rgba(232,0,29,0.15); color: var(--closed); border: 1px solid rgba(232,0,29,0.3); }
+  .pill-rest  { background: rgba(136,136,136,0.1); color: var(--muted); border: 1px solid var(--border); }
+
+  .chevron { color: var(--muted); font-size: 18px; transition: transform 0.25s; flex-shrink: 0; }
+  .day-card.expanded .chevron { transform: rotate(180deg); }
+
+  .day-body { display: none; padding: 0 18px 16px; border-top: 1px solid var(--border); }
+  .day-card.expanded .day-body { display: block; }
+
+  .timeline { margin-top: 14px; position: relative; }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 52px; top: 0; bottom: 0;
+    width: 1px;
+    background: var(--border);
+  }
+
+  .tl-item { display: flex; gap: 14px; margin-bottom: 12px; align-items: flex-start; }
+  .tl-time {
+    min-width: 52px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--muted);
+    text-align: right;
+    padding-top: 2px;
+    flex-shrink: 0;
+  }
+  .tl-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    margin-top: 5px;
+    flex-shrink: 0;
+    position: relative; z-index: 1;
+  }
+  .dot-close    { background: var(--red);     box-shadow: 0 0 0 3px rgba(232,0,29,0.2); }
+  .dot-open     { background: var(--open);    box-shadow: 0 0 0 3px rgba(34,197,94,0.2); }
+  .dot-mountain { background: var(--gold);    box-shadow: 0 0 0 3px rgba(245,168,0,0.2); }
+  .dot-session  { background: #555; }
+
+  .tl-label { font-size: 14px; line-height: 1.4; padding-top: 1px; }
+  .tl-label.is-close    { color: var(--closed); }
+  .tl-label.is-open     { color: var(--open); }
+  .tl-label.is-mountain { color: var(--mountain); }
+  .tl-label.is-session  { color: var(--text); }
+
+  .rest-day-msg {
+    text-align: center;
+    padding: 24px;
+    color: var(--muted);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 16px;
+    letter-spacing: 2px;
+  }
+
+  .contingency-note {
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: rgba(245,168,0,0.06);
+    border-left: 3px solid var(--gold);
+    border-radius: 0 2px 2px 0;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .contingency-note strong { color: var(--gold); }
+
+  footer {
+    text-align: center;
+    padding: 20px 16px;
+    font-size: 12px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+  }
+  footer a { color: var(--red); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-flag">
+    <div class="flag-stripe"></div>
+    <div class="flag-stripe"></div>
+    <div class="flag-stripe"></div>
+    <div class="flag-stripe"></div>
+  </div>
+  <div class="header-title">
+    TT Course <span>Closure</span> App
+    <span class="header-sub">Isle of Man · 2026</span>
+  </div>
+  <div class="live-badge">LIVE</div>
+</header>
+
+<div id="status-bar">
+  <span class="status-label">Course Status</span>
+  <span id="road-status">—</span>
+  <span class="status-sep">|</span>
+  <span id="status-detail">Checking…</span>
+  <span id="current-time"></span>
+</div>
+
+<div class="main">
+
+  <div class="legend">
+    <div class="leg-item"><div class="leg-dot" style="background:var(--mountain)"></div> Mountain section closing</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--red)"></div> Full course closed</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--open)"></div> Roads reopen</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#555"></div> Session in progress</div>
+  </div>
+
+  <div class="week-tabs">
+    <button class="week-tab active" onclick="showWeek('qualifying')">Qualifying</button>
+    <button class="week-tab" onclick="showWeek('race')">Race Week</button>
+    <button class="week-tab" onclick="showWeek('contingency')">Contingency</button>
+  </div>
+
+  <div id="qualifying-week"></div>
+  <div id="race-week" style="display:none"></div>
+  <div id="contingency-week" style="display:none"></div>
+
+</div>
+
+<footer>
+  <div style="margin-bottom:10px">
+    Closure times sourced from <a href="https://www.iomttraces.com/racing/page/schedule/" target="_blank">iomttraces.com</a> &amp;
+    <a href="https://www.gov.im" target="_blank">gov.im</a> ·
+    Subject to approval by the Department for Infrastructure · Road Races Act 2016
+  </div>
+  <div style="max-width:680px;margin:0 auto;padding:12px 16px;background:rgba(255,255,255,0.04);border:1px solid #333;border-radius:3px;line-height:1.6;text-align:left">
+    <strong style="color:#aaa">Disclaimer:</strong> The information on this app is provided for general guidance only and is based on the provisional schedule published by Isle of Man TT Races. Road closure times are subject to change at short notice due to weather, safety requirements, or other operational decisions. Always check the latest information with the official race organisers at <a href="https://www.iomttraces.com" target="_blank">iomttraces.com</a>, via <a href="https://www.manxradio.com" target="_blank">Manx Radio</a>, or the Department for Infrastructure before making travel plans. No liability is accepted for any loss, inconvenience, or damages arising from reliance on the information displayed here.
+  </div>
+</footer>
+
+<script>
+const DAYS = {
+  qualifying: [
+    {
+      date: '2026-05-25', label: 'Monday 25 May', tag: 'Qualifying Day 1',
+      type: 'qualifying',
+      events: [
+        { time: '08:45', label: 'Mountain section begins to close', dot: 'mountain', cls: 'is-mountain' },
+        { time: '10:00', label: 'Full course CLOSED', dot: 'close', cls: 'is-close' },
+        { time: '10:45', label: 'Qualifying session', dot: 'session', cls: 'is-session' },
+        { time: '21:30', label: 'All roads reopen (no later than)', dot: 'open', cls: 'is-open' },
+      ],
+      contingency: null
+    },
+    {
+      date: '2026-05-26', label: 'Tuesday 26 May', tag: 'Qualifying Day 2',
+      type: 'qualifying',
+      events: [
+        { time: '16:45', label: 'Mountain section begins to close', dot: 'mountain', cls: 'is-mountain' },
+        { time: '18:00', label: 'Full course CLOSED', dot: 'close', cls: 'is-close' },
+        { time: '18:30', label: 'Qualifying session', dot: 'session', cls: 'is-session' },
+        { time: '21:30', label: 'All roads reopen (no later than)', dot: 'open', cls: 'is-open' },
+      ],
+      contingency: null
+    },
+    {
+      date: '2026-05-27', label: 'Wednesday 27 May', tag: 'Qualifying Days 3 & 4',
+      type: 'qualifying',
+      events: [
+        { time: '11:15', label: 'Mountain section begins to close', dot: 'mountain', cls: 'is-mountain' },
+        { time: '12:30', label: 'Full course CLOSED', dot: 'close', cls: 'is-close' },
+        { time: '13:00', label: 'Qualifying session', dot: 'session', cls: 'is-session' },
+        { time: '16:30', label: 'Roads reopen (except Mountain section)', dot: 'open', cls: 'is-open' },
+        { time: '18:00', label: 'Full course CLOSED again', dot: 'close', cls: 'is-close' },
+        { time: '18:30', label: 'Qualifying session', dot: 'session', cls: 'is-session' },
+        { time: '21:30', label: 'All roads reopen (no later than)', dot: 'open', cls: 'is-open' },
+      ],
+      contingency: null
+    },
+    {
+      date: '2026-05-28', label: 'Thursday 28 May', tag: 'Rest Day',
+      type: 'rest', events: [],
+      contingency: 'Contingency windows available if needed: daytime closure 10:00–17:00 and/or evening closure 18:00–21:30.'
+    },
+    {
+      date: '2026-05-29', label: 'Friday 29 May', tag: 'Qualifying Days 5 & 6',
+      type: 'qualifying',
+      events: [
+        { time: '08:45', label: 'Mountain section begins to close', dot: 'mountain', cls: 'is-mountain' },
+        { time: '10:00', label: 'Full course CLOSED', dot: 'close', cls: 'is-close' },
+        { time: '10:30', label: 'Qualifying session', dot: 'session', cls: 'is-session' },
+        { time: '16:30', label: 'All roads reopen (no later than)', dot: 'open', cls: 'is-open' },
+      ],
+      contingency: 'Contingency: Evening closure 18:00–21:30 also possible if required.'
+    },
+  ],
+  race: [
+    {
+      date: '2026-05-30', label: 'Saturday 30 May', tag: 'Race Day 1',
+      type: 'race',
+      events: [
+        { time: '09:00', label: 'Mountain section begins to close', dot: 'mountain', cls: 'is-mountain' },
+        { time: '10:00', label: 'Full course CLOSED', dot: 'close', cls: 'is-close' },
+        { time: '10:45', label: 'Racing', dot: 'session', cls: 'is-session' },
+        { time: '21:30', label: 'All roads reopen (no later than)', dot: 'open', cls: 'is-open' },
+      ],
+      contingency: null
+    },
+    {
+      date: '2026-05-31', label: 'Sunday 31 May', tag: 'Race Day 2',
+      type: 'race',
+      events: [
+        { time: '11:00', label: 'Mountain section begins to close', dot: 'mountain', cls: 'is-mountain' },
+        { time: '12:30', label: 'Full course CLOSED', dot: 'close', cls: 'is-close' },
+        { time: '13:30', label: 'Racing', dot: 'session', cls: 'is-session' },
+        { time: '18:30', label: 'All roads reopen (no later than)', dot: 'open', cls: 'is-open' },
+      ],
+      contingency: null
+    },
+    {
+      date: '2026-06-01', label: 'Monday 1 June', tag: 'Rest Day',
+      type: 'rest', events: [],
+      contingency: 'Contingency windows available if needed: daytime closure 10:00–17:00 and/or evening closure 18:00–21:30.'
+    },
+    {
+      date: '2026-06-02', label: 'Tuesday 2 June', tag: 'Race Day 3',
+      type: 'race',
+      events: [
+        { time: '09:00', label: 'Mountain section begins to close', dot: 'mountain', cls: 'is-mountain' },
+        { time: '10:00', label: 'Full course CLOSED', dot: 'close', cls: 'is-close' },
+        { time: '10:45', label: 'Racing', dot: 'session', cls: 'is-session' },
+        { time: '17:00', label: 'All roads reopen (no later than)', dot: 'open', cls: 'is-open' },
+      ],
+      contingency: 'Contingency: Evening closure 18:00–21:30 also possible if required.'
+    },
+    {
+      date: '2026-06-03', label: 'Wednesday 3 June', tag: 'Race Day 4',
+      type: 'race',
+      events: [
+        { time: '09:00', label: 'Mountain section begins to close', dot: 'mountain', cls: 'is-mountain' },
+        { time: '10:00', label: 'Full course CLOSED', dot: 'close', cls: 'is-close' },
+        { time: '10:45', label: 'Racing', dot: 'session', cls: 'is-session' },
+        { time: '17:00', label: 'All roads reopen (no later than)', dot: 'open', cls: 'is-open' },
+      ],
+      contingency: 'Contingency: Evening closure 18:00–21:30 also possible if required.'
+    },
+    {
+      date: '2026-06-04', label: 'Thursday 4 June', tag: 'Rest Day',
+      type: 'rest', events: [],
+      contingency: 'Contingency windows available if needed: daytime closure 10:00–17:00 and/or evening closure 18:00–21:30.'
+    },
+    {
+      date: '2026-06-05', label: 'Friday 5 June', tag: 'Race Day 5 · Bank Holiday',
+      type: 'race',
+      events: [
+        { time: '09:00', label: 'Mountain section begins to close', dot: 'mountain', cls: 'is-mountain' },
+        { time: '10:00', label: 'Full course CLOSED', dot: 'close', cls: 'is-close' },
+        { time: '10:45', label: 'Racing', dot: 'session', cls: 'is-session' },
+        { time: '21:30', label: 'All roads reopen (no later than)', dot: 'open', cls: 'is-open' },
+      ],
+      contingency: null
+    },
+    {
+      date: '2026-06-06', label: 'Saturday 6 June', tag: 'Race Day 6 · Final Race Day',
+      type: 'race',
+      events: [
+        { time: '09:00', label: 'Mountain section begins to close', dot: 'mountain', cls: 'is-mountain' },
+        { time: '10:00', label: 'Full course CLOSED', dot: 'close', cls: 'is-close' },
+        { time: '11:00', label: 'Racing', dot: 'session', cls: 'is-session' },
+        { time: '21:30', label: 'All roads reopen (no later than)', dot: 'open', cls: 'is-open' },
+      ],
+      contingency: 'Contingency: Evening closure 18:00–21:30 also possible if required.'
+    },
+  ],
+  contingency: [
+    { label: 'Thursday 28 May', windows: [
+      { window: 'DAYTIME', times: '08:45 Mountain closes · 10:00 Full course CLOSED · 17:00 Reopens' },
+      { window: 'EVENING', times: '16:45 Mountain closes · 18:00 Full course CLOSED · 21:30 Reopens' },
+    ]},
+    { label: 'Friday 29 May', windows: [
+      { window: 'EVENING', times: '16:45 Mountain closes · 18:00 Full course CLOSED · 21:30 Reopens' },
+    ]},
+    { label: 'Monday 1 June', windows: [
+      { window: 'DAYTIME', times: '09:00 Mountain closes · 10:00 Full course CLOSED · 17:00 Reopens' },
+      { window: 'EVENING', times: '16:45 Mountain closes · 18:00 Full course CLOSED · 21:30 Reopens' },
+    ]},
+    { label: 'Tuesday 2 June', windows: [
+      { window: 'EVENING', times: '16:45 Mountain closes · 18:00 Full course CLOSED · 21:30 Reopens' },
+    ]},
+    { label: 'Wednesday 3 June', windows: [
+      { window: 'EVENING', times: '16:45 Mountain closes · 18:00 Full course CLOSED · 21:30 Reopens' },
+    ]},
+    { label: 'Thursday 4 June', windows: [
+      { window: 'DAYTIME', times: '09:00 Mountain closes · 10:00 Full course CLOSED · 17:00 Reopens' },
+      { window: 'EVENING', times: '16:45 Mountain closes · 18:00 Full course CLOSED · 21:30 Reopens' },
+    ]},
+    { label: 'Saturday 6 June', windows: [
+      { window: 'EVENING', times: '16:45 Mountain closes · 18:00 Full course CLOSED · 21:30 Reopens' },
+    ]},
+    { label: 'Sunday 7 June', windows: [
+      { window: 'DAYTIME', times: '11:30 Mountain closes · 12:30 Full course CLOSED · 18:30 Reopens' },
+    ]},
+  ]
+};
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function nowMins() { const d = new Date(); return d.getHours()*60+d.getMinutes(); }
+function timeMins(t) { const [h,m]=t.split(':').map(Number); return h*60+m; }
+
+function buildDayCard(day, idx, week) {
+  const today = todayStr();
+  const isToday = day.date === today;
+  const isRest = day.type === 'rest';
+  const isPast = day.date < today;
+
+  let pillHtml;
+  if (isRest) {
+    pillHtml = `<span class="closure-pill pill-rest">REST DAY</span>`;
+  } else if (isPast) {
+    pillHtml = `<span class="closure-pill pill-rest">COMPLETED</span>`;
+  } else if (isToday) {
+    const nm = nowMins();
+    let closed = false;
+    for (const e of day.events) {
+      if (nm >= timeMins(e.time)) {
+        if (e.dot === 'close' || e.dot === 'mountain') closed = true;
+        if (e.dot === 'open') closed = false;
+      }
+    }
+    pillHtml = closed
+      ? `<span class="closure-pill pill-closed">CLOSED NOW</span>`
+      : `<span class="closure-pill pill-open">OPEN NOW</span>`;
+  } else {
+    const closeEvt = day.events.find(e => e.dot === 'close');
+    const openEvt  = [...day.events].reverse().find(e => e.dot === 'open');
+    const range = closeEvt && openEvt ? `${closeEvt.time} – ${openEvt.time}` : '';
+    pillHtml = `<span class="closure-pill pill-closed">${range}</span>`;
+  }
+
+  const parts = day.label.split(' ');
+  const dayNum = parts[1];
+  const mon = parts[2].toUpperCase().slice(0,3);
+  const todayBadge = isToday ? `<span class="today-chip">TODAY</span>` : '';
+  const expanded = isToday ? 'expanded' : '';
+
+  let bodyHtml = '';
+  if (isRest) {
+    bodyHtml = `<div class="rest-day-msg">— REST DAY — No scheduled road closures</div>`;
+  } else {
+    let tlHtml = '';
+    for (const e of day.events) {
+      tlHtml += `<div class="tl-item">
+        <div class="tl-time">${e.time}</div>
+        <div class="tl-dot dot-${e.dot}"></div>
+        <div class="tl-label ${e.cls}">${e.label}</div>
+      </div>`;
+    }
+    bodyHtml = `<div class="timeline">${tlHtml}</div>`;
+  }
+  if (day.contingency) {
+    bodyHtml += `<div class="contingency-note"><strong>⚡ Contingency:</strong> ${day.contingency}</div>`;
+  }
+
+  return `<div class="day-card ${isToday?'is-today':''} ${expanded}" id="day-${week}-${idx}">
+    <div class="day-header" onclick="toggleCard('day-${week}-${idx}')">
+      <div class="day-date-block">
+        <div class="day-num">${dayNum}</div>
+        <div class="day-mon">${mon}</div>
+      </div>
+      <div class="day-info">
+        <div class="day-name">${parts[0]} ${parts[1]} ${parts[2]} ${todayBadge}</div>
+        <div class="day-type">${day.tag}</div>
+      </div>
+      ${pillHtml}
+      <div class="chevron">▾</div>
+    </div>
+    <div class="day-body">${bodyHtml}</div>
+  </div>`;
+}
+
+function buildContingencySection() {
+  let html = `<div style="margin-bottom:16px;padding:14px 16px;background:rgba(245,168,0,0.06);border:1px solid rgba(245,168,0,0.2);border-radius:4px;font-size:14px;color:var(--muted);line-height:1.6">
+    <strong style="color:var(--gold)">Contingency closures</strong> are only activated if sessions need rescheduling due to weather, accidents, or delays. They are not guaranteed to be used. Always check official sources on the day.
+  </div>`;
+  for (const c of DAYS.contingency) {
+    html += `<div class="day-card" style="margin-bottom:12px">
+      <div style="padding:14px 18px 10px;border-bottom:1px solid var(--border)">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:#fff">${c.label}</div>
+      </div>
+      <div style="padding:12px 18px 14px">`;
+    for (const w of c.windows) {
+      html += `<div style="margin-bottom:10px;padding:10px 14px;background:var(--mid);border-radius:2px;border-left:3px solid var(--gold)">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:12px;letter-spacing:2px;color:var(--gold);margin-bottom:4px">${w.window}</div>
+        <div style="font-size:14px;color:var(--text)">${w.times}</div>
+      </div>`;
+    }
+    html += `</div></div>`;
+  }
+  return html;
+}
+
+function toggleCard(id) { document.getElementById(id).classList.toggle('expanded'); }
+
+function showWeek(week) {
+  document.getElementById('qualifying-week').style.display = week==='qualifying'?'':'none';
+  document.getElementById('race-week').style.display = week==='race'?'':'none';
+  document.getElementById('contingency-week').style.display = week==='contingency'?'':'none';
+  document.querySelectorAll('.week-tab').forEach((t,i)=>{
+    t.classList.toggle('active', ['qualifying','race','contingency'][i]===week);
+  });
+}
+
+const qEl = document.getElementById('qualifying-week');
+const rEl = document.getElementById('race-week');
+const cEl = document.getElementById('contingency-week');
+DAYS.qualifying.forEach((d,i) => qEl.insertAdjacentHTML('beforeend', buildDayCard(d,i,'q')));
+DAYS.race.forEach((d,i)      => rEl.insertAdjacentHTML('beforeend', buildDayCard(d,i,'r')));
+cEl.innerHTML = buildContingencySection();
+
+const today = todayStr();
+if (DAYS.race.some(d=>d.date===today)) showWeek('race');
+else if (DAYS.qualifying.some(d=>d.date===today)) showWeek('qualifying');
+
+function updateStatus() {
+  const now = new Date();
+  const nm = nowMins();
+  document.getElementById('current-time').textContent =
+    now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+
+  const todayDate = todayStr();
+  const allDays = [...DAYS.qualifying, ...DAYS.race];
+  const todayDay = allDays.find(d=>d.date===todayDate);
+  const statusEl = document.getElementById('road-status');
+  const detailEl = document.getElementById('status-detail');
+
+  if (!todayDay) {
+    statusEl.textContent='OPEN'; statusEl.style.color='var(--open)';
+    if (todayDate < '2026-05-25') detailEl.textContent='Course closures begin 25 May 2026.';
+    else if (todayDate > '2026-06-06') detailEl.textContent='2026 course closures have concluded.';
+    else detailEl.textContent='Rest day — no scheduled closures today.';
+    return;
+  }
+
+  if (todayDay.type==='rest') {
+    statusEl.textContent='OPEN'; statusEl.style.color='var(--open)';
+    detailEl.textContent='Rest day — no scheduled closures today.';
+    return;
+  }
+
+  let currentState='open', nextEvent=null;
+  const sorted=[...todayDay.events].sort((a,b)=>timeMins(a.time)-timeMins(b.time));
+  for (const e of sorted) {
+    if (nm>=timeMins(e.time)) {
+      if (e.dot==='close') currentState='closed';
+      else if (e.dot==='mountain') currentState='mountain';
+      else if (e.dot==='open') currentState='open';
+    } else { if (!nextEvent) nextEvent=e; }
+  }
+
+  if (currentState==='closed') { statusEl.textContent='CLOSED'; statusEl.style.color='var(--closed)'; }
+  else if (currentState==='mountain') { statusEl.textContent='MOUNTAIN CLOSING'; statusEl.style.color='var(--mountain)'; }
+  else { statusEl.textContent='OPEN'; statusEl.style.color='var(--open)'; }
+
+  if (nextEvent) {
+    const mins=timeMins(nextEvent.time)-nm;
+    const h=Math.floor(mins/60), m=mins%60;
+    detailEl.textContent=`Next: ${nextEvent.label} in ${h>0?`${h}h ${m}m`:`${m} min`}`;
+  } else {
+    detailEl.textContent=todayDay.tag;
+  }
+}
+
+updateStatus();
+setInterval(updateStatus, 1000);
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+}
+</script>
+</body>
+</html>
