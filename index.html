@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TT 2026 – Road Closure Guide</title>
+    <link rel="manifest" href="/ttroadclosures/manifest.json">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap');
 
@@ -932,5 +933,10 @@ function updateStatus() {
 updateStatus();
 setInterval(updateStatus, 1000);
 </script>
+  <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/ttroadclosures/sw.js');
+  }
+  </script>
 </body>
 </html>
